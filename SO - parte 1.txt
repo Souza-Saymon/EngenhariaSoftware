@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stddef.h>
+
+// Definição do tamanho do pool de memória
+#define TAMANHO_DO_POOL 1048576
+
+// Estrutura que representa o alocador
+typedef struct {
+    char pool[TAMANHO_DO_POOL]; // Área onde os dados serão guardados
+    char* posicao_atual;        // Posição livre no pool
+} Alocador;
+
+// Função para inicializar o alocador
+void inicializar_alocador(Alocador* alocador) {
+    alocador->posicao_atual = alocador->pool; // Começa no início do pool
+}
+
+// Função para verificar se há espaço suficiente
+int verificar_espaco(Alocador* alocador, size_t tamanho) {
+    if ((alocador->posicao_atual + tamanho) > (alocador->pool + TAMANHO_DO_POOL)) {
+        return 0; // Não tem espaço
+    }
+    return 1; // Tem espaço
+}
+
+// Função para alocar memória no pool
+void* alocar_memoria(Alocador* alocador, size_t tamanho) {
+    if (!verificar_espaco(alocador, tamanho)) {
+        printf("Erro: Memória insuficiente para alocar %zu bytes!\n", tamanho);
+        return NULL;
+    }
+    
+    void* endereco = alocador->posicao_atual; // Guarda a posição atual
+    alocador->posicao_atual += tamanho;       // Avança a posição livre
+
+    printf("Alocado %zu bytes em %p\n", tamanho, endereco);
+    return endereco; // Retorna o endereço do bloco alocado
+}
+
+// Função para "liberar" a memória (resetar)
+void liberar_tudo(Alocador* alocador) {
+    alocador->posicao_atual = alocador->pool; // Reseta para o início
+    printf("Memória resetada. Pool liberado!\n");
+}
+
+// Função principal para testar o alocador
+int main() {
+    // Criar o alocador e inicializá-lo
+    Alocador alocador;
+    inicializar_alocador(&alocador);
+
+    // Tentativa de alocar memória
+    char* bloco1 = (char*)alocar_memoria(&alocador, 100); // Alocar 100 bytes
+    if (bloco1 == NULL) {
+        printf("Erro ao alocar o bloco 1.\n");
+    }
+
+    int* bloco2 = (int*)alocar_memoria(&alocador, 200); // Alocar 200 bytes
+    if (bloco2 == NULL) {
+        printf("Erro ao alocar o bloco 2.\n");
+    }
+
+    // Checar se os blocos foram alocados
+    if (bloco1 && bloco2) {
+        printf("Alocação de memória bem-sucedida!\n");
+    } else {
+        printf("Falha na alocação de um ou mais blocos.\n");
+    }
+
+    // Liberar toda a memória
+    liberar_tudo(&alocador);
+
+    return 0;
+}
